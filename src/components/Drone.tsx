@@ -258,14 +258,12 @@ const Drone: React.FC = () => {
   }, [isPlaying, selectedNotes, noteOctaves, maxNotes, octave, createSynth]);
 
   const handleToggle = useCallback(async () => {
+    await Tone.start();
+    await Tone.context.resume();
     if (isPlaying) {
       handleStop();
     } else {
       try {
-        if (Tone.context.state !== 'running') {
-          await Tone.start();
-          await Tone.context.resume();
-        }
         handleStart();
       } catch {
         setError('oops! something went wrong! you may need to refresh the website');

@@ -200,6 +200,8 @@ const Metronome: React.FC = () => {
 
   // Toggle play/stop
   const handleToggle = useCallback(async () => {
+    await Tone.start();
+    await Tone.context.resume();
     if (isPlaying) {
       handleStop();
     } else {
