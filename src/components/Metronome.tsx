@@ -323,8 +323,15 @@ const Metronome: React.FC = () => {
               key={type}
               onClick={e => {
                 e.stopPropagation();
-                setClickSoundType(type);
-                setCustomSoundFile(null);
+                if (isPlaying) {
+                  handleStop();
+                  setClickSoundType(type);
+                  setCustomSoundFile(null);
+                  setTimeout(() => handleStart(), 100);
+                } else {
+                  setClickSoundType(type);
+                  setCustomSoundFile(null);
+                }
               }}
               style={{
                 padding: '5px 6px',
@@ -352,10 +359,23 @@ const Metronome: React.FC = () => {
             onChange={e => {
               const val = e.target.value;
               if (MAIN_CLICKS.some(m => m.file === val)) {
-                setClickSoundType(MAIN_CLICKS.find(m => m.file === val)!.type);
-                setCustomSoundFile(null);
+                if (isPlaying) {
+                  handleStop();
+                  setClickSoundType(MAIN_CLICKS.find(m => m.file === val)!.type);
+                  setCustomSoundFile(null);
+                  setTimeout(() => handleStart(), 100);
+                } else {
+                  setClickSoundType(MAIN_CLICKS.find(m => m.file === val)!.type);
+                  setCustomSoundFile(null);
+                }
               } else {
-                setCustomSoundFile(val);
+                if (isPlaying) {
+                  handleStop();
+                  setCustomSoundFile(val);
+                  setTimeout(() => handleStart(), 100);
+                } else {
+                  setCustomSoundFile(val);
+                }
               }
             }}
             style={{ fontSize: 13, padding: '3px 6px', width: '100%', maxWidth: 320 }}
