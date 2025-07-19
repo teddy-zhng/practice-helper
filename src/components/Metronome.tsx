@@ -161,8 +161,8 @@ const Metronome: React.FC = () => {
         }
         loopRef.current.start(0);
         Tone.Transport.start();
-        setIsPlaying(true);
         setSwitching(false); // unlock switching
+        setIsPlaying(true); // <-- moved here, after everything is ready
       };
       if (MAIN_CLICKS.some(m => m.file === file) && preloadedPlayers.current[file]) {
         createClickPlayer(file);
