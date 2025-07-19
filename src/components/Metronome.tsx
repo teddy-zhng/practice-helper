@@ -4,14 +4,6 @@ import * as Tone from 'tone';
 // Common BPM values from the image
 const COMMON_BPMS = [44, 46, 48, 50, 52, 54, 56, 58, 60, 63, 66, 69, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112, 116, 120, 126, 132, 138, 144, 152, 160, 168, 176, 184, 200, 208];
 
-// Click sound types
-const CLICK_SOUNDS = [
-  { type: 'synth_square_d_hi', label: 'square d', color: '#00bcd4', file: '/metronome_sounds/Synth_Square_D_hi.wav' },
-  { type: 'perc_chair_lo', label: 'chair', color: '#9c27b0', file: '/metronome_sounds/Perc_Chair_lo.wav' },
-  { type: 'perc_metronome_quartz_lo', label: 'quartz', color: '#795548', file: '/metronome_sounds/Perc_MetronomeQuartz_lo.wav' },
-  { type: 'synth_bell_a_hi', label: 'bell a', color: '#ff9800', file: '/metronome_sounds/Synth_Bell_A_hi.wav' },
-  { type: 'synth_weird_a_hi', label: 'weird a', color: '#4caf50', file: '/metronome_sounds/Synth_Weird_A_hi.wav' },
-] as const;
 
 // Main click sound mapping
 const MAIN_CLICKS = [
@@ -25,7 +17,7 @@ const MAIN_CLICKS = [
 const Metronome: React.FC = () => {
   const [bpm, setBpm] = useState(88);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [beat, setBeat] = useState(0);
+  const [, setBeat] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [clickSoundType, setClickSoundType] = useState<string>(MAIN_CLICKS[0].type);
   const [customSoundFile, setCustomSoundFile] = useState<string | null>(null);
@@ -326,7 +318,7 @@ const Metronome: React.FC = () => {
           maxWidth: 380,
           marginTop: 6,
         }}>
-          {MAIN_CLICKS.map(({ type, label, color, file }) => (
+          {MAIN_CLICKS.map(({ type, label, color }) => (
             <button
               key={type}
               onClick={e => {
