@@ -17,15 +17,14 @@ const hintMessages = [
   'click anywhere on a tool to turn it on/off.',
   'all of the tools can be used simultaneously.',
   'try using multi-note drones!',
+  'permanently allow microphone for this site in your browser settings',
   'tuner markings include just temperament!',
   'choose from 122 metronome sounds!',
   'this website helps avoid phone usage during practicing.',
   '\"drone\" comes from the old english drǣn, meaning male bee.',
   'the tuner is not very forgiving...',
-  'what do you call two violists playing the same note? a minor second!',
-  '',
-  '',
-  'now stop clicking me and get back to practicing!',
+  'what do you call two violists playing the same note? a minor second.',
+  'stop clicking me and get back to practicing!',
 ];
 
 const App: React.FC = () => {
