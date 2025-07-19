@@ -250,6 +250,25 @@ const Metronome: React.FC = () => {
             </button>
           ))}
         </div>
+        {/* Dropdown for all sounds */}
+        <div style={{ marginTop: 8, width: '100%', maxWidth: 420, display: 'flex', justifyContent: 'center' }}>
+          <select
+            value={soundIdx}
+            onChange={e => {
+              if (isPlaying) return;
+              handleSoundChange(Number(e.target.value));
+            }}
+            style={{ fontSize: 13, padding: '3px 6px', width: '100%', maxWidth: 320 }}
+            aria-label="Select metronome sound"
+            disabled={isPlaying}
+          >
+            {SOUNDS.map((s, idx) => (
+              <option key={s.file} value={idx}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
         {/* Info blurb */}
         <div style={{ marginTop: 4, width: '100%', maxWidth: 320, fontSize: 10, color: '#888', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.4 }}>
           metronome sounds recorded by Ludwig Peter Müller<br />
