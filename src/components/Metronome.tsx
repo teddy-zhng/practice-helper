@@ -22,13 +22,11 @@ const Metronome: React.FC = () => {
   const [clickSoundType, setClickSoundType] = useState<string>(MAIN_CLICKS[0].type);
   const [customSoundFile, setCustomSoundFile] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [switching, setSwitching] = useState(false); // NEW: switching lock
   const synthRef = useRef<any>(null); // now can be Tone.Player
   const loopRef = useRef<Tone.Loop | null>(null);
   const beatCountRef = useRef(0);
   const [allSounds, setAllSounds] = useState<{file: string}[]>([]);
   const preloadedPlayers = useRef<{[file: string]: Tone.Player}>({});
-  // Remove pulse state and effect
   const retryTimeoutRef = React.useRef<number | null>(null);
 
   // Preload main click sounds
@@ -124,61 +122,59 @@ const Metronome: React.FC = () => {
     } catch {}
   }
 
-  // Start the metronome
+  // Start the metronome (only after sound is loaded)
+  const actuallyStartMetronome = useCallback(() => {
+    Tone.Transport.bpm.value = bpm;
+    beatCountRef.current = 0;
+    setBeat(0);
+    if (!loopRef.current) {
+      loopRef.current = new Tone.Loop((time) => {
+        if (synthRef.current && synthRef.current.loaded) {
+          synthRef.current.start(time);
+        }
+        Tone.Draw.schedule(() => {
+          setTimeout(() => {
+            setBeat(() => {
+              const next = (beatCountRef.current % 4);
+              beatCountRef.current++;
+              return next;
+            });
+          }, 35);
+        }, time);
+      }, '4n');
+    }
+    loopRef.current.start(0);
+    Tone.Transport.start();
+    setIsPlaying(true);
+  }, [bpm]);
+
+  // Stop the metronome
+  const handleStop = useCallback(() => {
+    setIsPlaying(false);
+    setBeat(0);
+    beatCountRef.current = 0;
+    cleanupAudio();
+  }, []);
+
+  // Start the metronome (public API)
   const handleStart = useCallback(async () => {
     try {
       setError(null);
-      setSwitching(true); // lock switching
       if (Tone.context.state !== 'running') {
         await Tone.start();
         await Tone.context.resume();
       } else {
         await Tone.start();
       }
-      // Always clean up before starting
       cleanupAudio();
-      // Only start after loading
       const file = getCurrentSoundFile();
-      const startLoop = () => {
-        Tone.Transport.bpm.value = bpm;
-        beatCountRef.current = 0;
-        setBeat(0);
-        if (!loopRef.current) {
-          loopRef.current = new Tone.Loop((time) => {
-            if (synthRef.current && synthRef.current.loaded) {
-              synthRef.current.start(time);
-            }
-            Tone.Draw.schedule(() => {
-              setTimeout(() => {
-                setBeat(() => {
-                  const next = (beatCountRef.current % 4);
-                  beatCountRef.current++;
-                  return next;
-                });
-              }, 35);
-            }, time);
-          }, '4n');
-        }
-        loopRef.current.start(0);
-        Tone.Transport.start();
-        setSwitching(false); // unlock switching
-        setIsPlaying(true); // <-- moved here, after everything is ready
-      };
-      if (MAIN_CLICKS.some(m => m.file === file) && preloadedPlayers.current[file]) {
-        createClickPlayer(file);
-        startLoop();
-      } else {
-        setIsLoading(true);
-        createClickPlayer(file, () => {
-          setIsLoading(false);
-          startLoop();
-        });
-      }
+      createClickPlayer(file, () => {
+        actuallyStartMetronome();
+      });
     } catch {
       setError('oops! something went wrong! you may need to refresh the website');
       setIsPlaying(false);
       setIsLoading(false);
-      setSwitching(false); // unlock switching on error
       if (!retryTimeoutRef.current) {
         retryTimeoutRef.current = window.setTimeout(() => {
           retryTimeoutRef.current = null;
@@ -187,39 +183,30 @@ const Metronome: React.FC = () => {
         }, 2000);
       }
     }
-  }, [bpm, clickSoundType, createClickPlayer]);
-
-  // Stop the metronome
-  const handleStop = useCallback(() => {
-    setIsPlaying(false);
-    setBeat(0);
-    beatCountRef.current = 0;
-    cleanupAudio();
-    setSwitching(false); // unlock switching
-  }, []);
+  }, [actuallyStartMetronome, getCurrentSoundFile, createClickPlayer]);
 
   // Toggle play/stop
   const handleToggle = useCallback(async () => {
     if (isPlaying) {
       handleStop();
     } else {
-      try {
-        if (Tone.context.state !== 'running') {
-          await Tone.start();
-          await Tone.context.resume();
-        }
+      handleStart();
+    }
+  }, [isPlaying, handleStop, handleStart]);
+
+  // When click sound type or custom file changes, switch sound
+  const handleSoundSwitch = useCallback((type: string | null, file: string | null) => {
+    if (isPlaying) {
+      handleStop();
+      // After stop, set new sound and start
+      setTimeout(() => {
+        if (type) setClickSoundType(type);
+        setCustomSoundFile(file);
         handleStart();
-      } catch {
-        setError('oops! something went wrong! you may need to refresh the website');
-        // Start auto-retry
-        if (!retryTimeoutRef.current) {
-          retryTimeoutRef.current = window.setTimeout(() => {
-            retryTimeoutRef.current = null;
-            if (isPlaying) return;
-            handleStart();
-          }, 2000);
-        }
-      }
+      }, 100);
+    } else {
+      if (type) setClickSoundType(type);
+      setCustomSoundFile(file);
     }
   }, [isPlaying, handleStop, handleStart]);
 
@@ -241,7 +228,7 @@ const Metronome: React.FC = () => {
 
   // When click sound type changes, update player if playing
   useEffect(() => {
-    if (isPlaying && !switching) {
+    if (isPlaying && !isLoading) {
       handleStop();
       setTimeout(() => handleStart(), 100);
     }
@@ -380,16 +367,8 @@ const Metronome: React.FC = () => {
               key={type}
               onClick={e => {
                 e.stopPropagation();
-                if (switching || isLoading) return;
-                if (isPlaying) {
-                  handleStop();
-                  setClickSoundType(type);
-                  setCustomSoundFile(null);
-                  setTimeout(() => handleStart(), 100);
-                } else {
-                  setClickSoundType(type);
-                  setCustomSoundFile(null);
-                }
+                if (isLoading) return;
+                handleSoundSwitch(type, null);
               }}
               style={{
                 padding: '5px 6px',
@@ -398,14 +377,14 @@ const Metronome: React.FC = () => {
                 borderRadius: '0px',
                 backgroundColor: !customSoundFile && clickSoundType === type ? color : '#e8e8e8',
                 color: !customSoundFile && clickSoundType === type ? 'white' : '#333',
-                cursor: switching || isLoading ? 'not-allowed' : 'pointer',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease',
                 minWidth: '38px',
                 margin: '0px',
                 flex: 1,
               }}
               aria-label={`Select ${label} click sound`}
-              disabled={isLoading || switching}
+              disabled={isLoading}
             >
               {label}
             </button>
@@ -416,38 +395,17 @@ const Metronome: React.FC = () => {
           <select
             value={customSoundFile || getCurrentSoundFile()}
             onChange={e => {
-              if (switching || isLoading) return;
+              if (isLoading) return;
               const val = e.target.value;
               if (MAIN_CLICKS.some(m => m.file === val)) {
-                if (isPlaying) {
-                  handleStop();
-                  setClickSoundType(MAIN_CLICKS.find(m => m.file === val)!.type);
-                  setCustomSoundFile(null);
-                  setTimeout(() => handleStart(), 100);
-                } else {
-                  setClickSoundType(MAIN_CLICKS.find(m => m.file === val)!.type);
-                  setCustomSoundFile(null);
-                }
+                handleSoundSwitch(MAIN_CLICKS.find(m => m.file === val)!.type, null);
               } else {
-                if (isPlaying) {
-                  handleStop();
-                  setIsLoading(true);
-                  setCustomSoundFile(val);
-                  // Wait for loading before allowing another change
-                  createClickPlayer(val, () => {
-                    setIsLoading(false);
-                    handleStart();
-                  });
-                } else {
-                  setIsLoading(true);
-                  setCustomSoundFile(val);
-                  createClickPlayer(val, () => setIsLoading(false));
-                }
+                handleSoundSwitch(null, val);
               }
             }}
             style={{ fontSize: 13, padding: '3px 6px', width: '100%', maxWidth: 320 }}
             aria-label="Select metronome sound"
-            disabled={isLoading || switching}
+            disabled={isLoading}
           >
             {ALL_SOUNDS.map((s) => (
               <option key={s.file} value={s.file}>
