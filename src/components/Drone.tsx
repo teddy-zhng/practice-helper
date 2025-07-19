@@ -11,7 +11,7 @@ const Drone: React.FC = () => {
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
   const [noteOctaves, setNoteOctaves] = useState<number[]>([3]);
   const [maxNotes, setMaxNotes] = useState(1);
-  const [octave, setOctave] = useState(3);
+  const [octave] = useState(3);
   const [soundType, setSoundType] = useState<SoundType>('tuning');
   const [error, setError] = useState<string | null>(null);
   const synthRefs = useRef<(Tone.Synth | Tone.MonoSynth | null)[]>([]);
@@ -369,7 +369,7 @@ const Drone: React.FC = () => {
           width: '100%',
           maxWidth: '280px'
         }}>
-          {NOTES.map((n, index) => (
+          {NOTES.map((n) => (
             <button
               key={n}
               onClick={(e) => {
@@ -404,7 +404,7 @@ const Drone: React.FC = () => {
             width: '100%',
             maxWidth: '280px'
           }}>
-            {OCTAVES.map((o, index) => (
+            {OCTAVES.map((o) => (
               <button
                 key={o}
                 onClick={(e) => {
@@ -512,7 +512,7 @@ const Drone: React.FC = () => {
             { type: 'pure' as SoundType, label: 'tone 2', color: '#9c27b0' },
             { type: '"brass"' as SoundType, label: 'tone 3', color: '#795548' },
             { type: 'retro' as SoundType, label: 'tone 4', color: '#ff9800' }
-          ].map(({ type, label, color }, index) => (
+          ].map(({ type, label, color }) => (
             <button
               key={type}
               onClick={(e) => {

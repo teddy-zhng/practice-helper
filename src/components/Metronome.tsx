@@ -12,7 +12,6 @@ const CLICK_SOUNDS = [
   { type: 'synth_bell_a_hi', label: 'bell a', color: '#ff9800', file: '/metronome_sounds/Synth_Bell_A_hi.wav' },
   { type: 'synth_weird_a_hi', label: 'weird a', color: '#4caf50', file: '/metronome_sounds/Synth_Weird_A_hi.wav' },
 ] as const;
-type ClickSoundType = typeof CLICK_SOUNDS[number]['type'];
 
 // Main click sound mapping
 const MAIN_CLICKS = [
@@ -105,7 +104,7 @@ const Metronome: React.FC = () => {
           }
           Tone.Draw.schedule(() => {
             setTimeout(() => {
-              setBeat((prev) => {
+              setBeat(() => {
                 const next = (beatCountRef.current % 4);
                 beatCountRef.current++;
                 return next;
@@ -370,7 +369,7 @@ const Metronome: React.FC = () => {
             style={{ fontSize: 13, padding: '3px 6px', width: '100%', maxWidth: 320 }}
             aria-label="Select metronome sound"
           >
-            {ALL_SOUNDS.map(s => (
+            {ALL_SOUNDS.map((s) => (
               <option key={s.file} value={s.file}>
                 {getDisplayName(s.file)}
               </option>
