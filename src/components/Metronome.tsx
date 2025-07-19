@@ -22,6 +22,7 @@ const Metronome: React.FC = () => {
   const [clickSoundType, setClickSoundType] = useState<string>(MAIN_CLICKS[0].type);
   const [customSoundFile, setCustomSoundFile] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [switching, setSwitching] = useState(false); // NEW: switching lock
   const synthRef = useRef<any>(null); // now can be Tone.Player
   const loopRef = useRef<Tone.Loop | null>(null);
   const beatCountRef = useRef(0);
@@ -127,6 +128,7 @@ const Metronome: React.FC = () => {
   const handleStart = useCallback(async () => {
     try {
       setError(null);
+      setSwitching(true); // lock switching
       if (Tone.context.state !== 'running') {
         await Tone.start();
         await Tone.context.resume();
@@ -160,6 +162,7 @@ const Metronome: React.FC = () => {
         loopRef.current.start(0);
         Tone.Transport.start();
         setIsPlaying(true);
+        setSwitching(false); // unlock switching
       };
       if (MAIN_CLICKS.some(m => m.file === file) && preloadedPlayers.current[file]) {
         createClickPlayer(file);
@@ -175,6 +178,7 @@ const Metronome: React.FC = () => {
       setError('oops! something went wrong! you may need to refresh the website');
       setIsPlaying(false);
       setIsLoading(false);
+      setSwitching(false); // unlock switching on error
       if (!retryTimeoutRef.current) {
         retryTimeoutRef.current = window.setTimeout(() => {
           retryTimeoutRef.current = null;
@@ -191,6 +195,7 @@ const Metronome: React.FC = () => {
     setBeat(0);
     beatCountRef.current = 0;
     cleanupAudio();
+    setSwitching(false); // unlock switching
   }, []);
 
   // Toggle play/stop
@@ -236,7 +241,7 @@ const Metronome: React.FC = () => {
 
   // When click sound type changes, update player if playing
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && !switching) {
       handleStop();
       setTimeout(() => handleStart(), 100);
     }
@@ -375,6 +380,7 @@ const Metronome: React.FC = () => {
               key={type}
               onClick={e => {
                 e.stopPropagation();
+                if (switching || isLoading) return;
                 if (isPlaying) {
                   handleStop();
                   setClickSoundType(type);
@@ -392,14 +398,14 @@ const Metronome: React.FC = () => {
                 borderRadius: '0px',
                 backgroundColor: !customSoundFile && clickSoundType === type ? color : '#e8e8e8',
                 color: !customSoundFile && clickSoundType === type ? 'white' : '#333',
-                cursor: 'pointer',
+                cursor: switching || isLoading ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease',
                 minWidth: '38px',
                 margin: '0px',
                 flex: 1,
               }}
               aria-label={`Select ${label} click sound`}
-              disabled={isLoading}
+              disabled={isLoading || switching}
             >
               {label}
             </button>
@@ -410,6 +416,7 @@ const Metronome: React.FC = () => {
           <select
             value={customSoundFile || getCurrentSoundFile()}
             onChange={e => {
+              if (switching || isLoading) return;
               const val = e.target.value;
               if (MAIN_CLICKS.some(m => m.file === val)) {
                 if (isPlaying) {
@@ -440,7 +447,7 @@ const Metronome: React.FC = () => {
             }}
             style={{ fontSize: 13, padding: '3px 6px', width: '100%', maxWidth: 320 }}
             aria-label="Select metronome sound"
-            disabled={isLoading}
+            disabled={isLoading || switching}
           >
             {ALL_SOUNDS.map((s) => (
               <option key={s.file} value={s.file}>
