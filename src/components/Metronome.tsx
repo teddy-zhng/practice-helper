@@ -82,9 +82,22 @@ const Metronome: React.FC = () => {
     }
     // Use preloaded for main clicks
     if (MAIN_CLICKS.some(m => m.file === file) && preloadedPlayers.current[file]) {
-      synthRef.current = preloadedPlayers.current[file];
+      const player = preloadedPlayers.current[file];
+      synthRef.current = player;
       synthRef.current.volume.value = 0; // Ensure loud metronome
-      if (onLoad) onLoad();
+      if (player.loaded) {
+        if (onLoad) onLoad();
+      } else {
+        setIsLoading(true);
+        // Poll for loaded
+        const interval = setInterval(() => {
+          if (player.loaded) {
+            clearInterval(interval);
+            setIsLoading(false);
+            if (onLoad) onLoad();
+          }
+        }, 20);
+      }
     } else {
       setIsLoading(true);
       synthRef.current = new Tone.Player({
