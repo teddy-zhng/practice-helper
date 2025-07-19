@@ -245,7 +245,7 @@ const Metronome: React.FC = () => {
         </div>
         {/* Sound selection */}
         <div style={{ display: 'flex', justifyContent: 'center', width: '100%', maxWidth: 380, marginTop: 6 }}>
-          {MAIN_SOUNDS.map((s, idx) => {
+          {MAIN_SOUNDS.map((s) => {
             // Find the index in allSounds for this main sound
             const allIdx = allSounds.findIndex(f => f === s.file);
             return (
