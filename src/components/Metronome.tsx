@@ -21,12 +21,23 @@ const Metronome: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [clickSoundType, setClickSoundType] = useState<string>(MAIN_CLICKS[0].type);
   const [customSoundFile, setCustomSoundFile] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const synthRef = useRef<any>(null); // now can be Tone.Player
   const loopRef = useRef<Tone.Loop | null>(null);
   const beatCountRef = useRef(0);
   const [allSounds, setAllSounds] = useState<{file: string}[]>([]);
+  const preloadedPlayers = useRef<{[file: string]: Tone.Player}>({});
   // Remove pulse state and effect
   const retryTimeoutRef = React.useRef<number | null>(null);
+
+  // Preload main click sounds
+  useEffect(() => {
+    MAIN_CLICKS.forEach(({ file }) => {
+      if (!preloadedPlayers.current[file]) {
+        preloadedPlayers.current[file] = new Tone.Player({ url: file, autostart: false, volume: 0 }).toDestination();
+      }
+    });
+  }, []);
 
   useEffect(() => {
     async function fetchSounds() {
@@ -65,13 +76,52 @@ const Metronome: React.FC = () => {
   };
 
   // Create player for selected click sound
-  const createClickPlayer = useCallback((file: string) => {
+  const createClickPlayer = useCallback((file: string, onLoad?: () => void) => {
     if (synthRef.current) {
       synthRef.current.dispose?.();
       synthRef.current = null;
     }
-    synthRef.current = new Tone.Player({ url: file, autostart: false }).toDestination();
+    // Use preloaded for main clicks
+    if (MAIN_CLICKS.some(m => m.file === file) && preloadedPlayers.current[file]) {
+      synthRef.current = preloadedPlayers.current[file];
+      synthRef.current.volume.value = 0; // Ensure loud metronome
+      if (onLoad) onLoad();
+    } else {
+      setIsLoading(true);
+      synthRef.current = new Tone.Player({
+        url: file,
+        autostart: false,
+        volume: 0, // Louder metronome
+        onload: () => {
+          setIsLoading(false);
+          if (onLoad) onLoad();
+        },
+      }).toDestination();
+    }
   }, []);
+
+  // Utility to safely stop and dispose loop and player
+  function cleanupAudio() {
+    if (loopRef.current) {
+      try {
+        loopRef.current.stop(0);
+      } catch {}
+      try {
+        loopRef.current.dispose();
+      } catch {}
+      loopRef.current = null;
+    }
+    if (synthRef.current) {
+      try {
+        synthRef.current.dispose?.();
+      } catch {}
+      synthRef.current = null;
+    }
+    try {
+      Tone.Transport.stop();
+      Tone.Transport.cancel();
+    } catch {}
+  }
 
   // Start the metronome
   const handleStart = useCallback(async () => {
@@ -83,39 +133,52 @@ const Metronome: React.FC = () => {
       } else {
         await Tone.start();
       }
-      createClickPlayer(getCurrentSoundFile());
-      // Set BPM
-      Tone.Transport.bpm.value = bpm;
-      beatCountRef.current = 0;
-      setBeat(0);
-      // Create a new loop if not exists
-      if (!loopRef.current) {
-        loopRef.current = new Tone.Loop((time) => {
-          if (synthRef.current) {
-            synthRef.current.start(time);
-          }
-          Tone.Draw.schedule(() => {
-            setTimeout(() => {
-              setBeat(() => {
-                const next = (beatCountRef.current % 4);
-                beatCountRef.current++;
-                return next;
-              });
-            }, 35); // 20ms offset for .wav attack
-          }, time);
-        }, '4n');
+      // Always clean up before starting
+      cleanupAudio();
+      // Only start after loading
+      const file = getCurrentSoundFile();
+      const startLoop = () => {
+        Tone.Transport.bpm.value = bpm;
+        beatCountRef.current = 0;
+        setBeat(0);
+        if (!loopRef.current) {
+          loopRef.current = new Tone.Loop((time) => {
+            if (synthRef.current && synthRef.current.loaded) {
+              synthRef.current.start(time);
+            }
+            Tone.Draw.schedule(() => {
+              setTimeout(() => {
+                setBeat(() => {
+                  const next = (beatCountRef.current % 4);
+                  beatCountRef.current++;
+                  return next;
+                });
+              }, 35);
+            }, time);
+          }, '4n');
+        }
+        loopRef.current.start(0);
+        Tone.Transport.start();
+        setIsPlaying(true);
+      };
+      if (MAIN_CLICKS.some(m => m.file === file) && preloadedPlayers.current[file]) {
+        createClickPlayer(file);
+        startLoop();
+      } else {
+        setIsLoading(true);
+        createClickPlayer(file, () => {
+          setIsLoading(false);
+          startLoop();
+        });
       }
-      loopRef.current.start(0);
-      Tone.Transport.start();
-      setIsPlaying(true);
     } catch {
       setError('oops! something went wrong! you may need to refresh the website');
       setIsPlaying(false);
-      // Start auto-retry
+      setIsLoading(false);
       if (!retryTimeoutRef.current) {
         retryTimeoutRef.current = window.setTimeout(() => {
           retryTimeoutRef.current = null;
-          if (isPlaying) return; // Only retry if still enabled
+          if (isPlaying) return;
           handleStart();
         }, 2000);
       }
@@ -127,10 +190,7 @@ const Metronome: React.FC = () => {
     setIsPlaying(false);
     setBeat(0);
     beatCountRef.current = 0;
-    if (loopRef.current) {
-      loopRef.current.stop(0);
-    }
-    Tone.Transport.stop();
+    cleanupAudio();
   }, []);
 
   // Toggle play/stop
@@ -177,24 +237,16 @@ const Metronome: React.FC = () => {
   // When click sound type changes, update player if playing
   useEffect(() => {
     if (isPlaying) {
-      createClickPlayer(getCurrentSoundFile());
+      handleStop();
+      setTimeout(() => handleStart(), 100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clickSoundType]);
+  }, [clickSoundType, customSoundFile]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (loopRef.current) {
-        loopRef.current.dispose();
-        loopRef.current = null;
-      }
-      if (synthRef.current) {
-        synthRef.current.dispose();
-        synthRef.current = null;
-      }
-      Tone.Transport.stop();
-      Tone.Transport.cancel();
+      cleanupAudio();
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
         retryTimeoutRef.current = null;
@@ -347,6 +399,7 @@ const Metronome: React.FC = () => {
                 flex: 1,
               }}
               aria-label={`Select ${label} click sound`}
+              disabled={isLoading}
             >
               {label}
             </button>
@@ -371,15 +424,23 @@ const Metronome: React.FC = () => {
               } else {
                 if (isPlaying) {
                   handleStop();
+                  setIsLoading(true);
                   setCustomSoundFile(val);
-                  setTimeout(() => handleStart(), 100);
+                  // Wait for loading before allowing another change
+                  createClickPlayer(val, () => {
+                    setIsLoading(false);
+                    handleStart();
+                  });
                 } else {
+                  setIsLoading(true);
                   setCustomSoundFile(val);
+                  createClickPlayer(val, () => setIsLoading(false));
                 }
               }
             }}
             style={{ fontSize: 13, padding: '3px 6px', width: '100%', maxWidth: 320 }}
             aria-label="Select metronome sound"
+            disabled={isLoading}
           >
             {ALL_SOUNDS.map((s) => (
               <option key={s.file} value={s.file}>
@@ -387,6 +448,7 @@ const Metronome: React.FC = () => {
               </option>
             ))}
           </select>
+          {isLoading && <span style={{ marginLeft: 8, fontSize: 13 }}>Loading...</span>}
         </div>
         {/* Info blurb about metronome sounds */}
         <div
