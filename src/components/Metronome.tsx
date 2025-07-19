@@ -7,11 +7,11 @@ const COMMON_BPMS = [44, 46, 48, 50, 52, 54, 56, 58, 60, 63, 66, 69, 72, 76, 80,
 
 // Main click sound mapping
 const MAIN_CLICKS = [
-  { type: 'perc_chair_lo', label: 'Click 1', color: '#9c27b0', file: '/metronome_sounds/Perc_Chair_lo.wav' },
-  { type: 'perc_metronome_quartz_lo', label: 'Click 2', color: '#795548', file: '/metronome_sounds/Perc_MetronomeQuartz_lo.wav' },
-  { type: 'synth_bell_a_hi', label: 'Click 3', color: '#ff9800', file: '/metronome_sounds/Synth_Bell_A_hi.wav' },
-  { type: 'synth_square_d_hi', label: 'Click 4', color: '#00bcd4', file: '/metronome_sounds/Synth_Square_D_hi.wav' },
-  { type: 'synth_weird_a_hi', label: 'Click 5', color: '#4caf50', file: '/metronome_sounds/Synth_Weird_A_hi.wav' },
+  { type: 'perc_chair_lo', label: 'Click 1', color: '#9c27b0', file: `${import.meta.env.BASE_URL}metronome_sounds/Perc_Chair_lo.wav` },
+  { type: 'perc_metronome_quartz_lo', label: 'Click 2', color: '#795548', file: `${import.meta.env.BASE_URL}metronome_sounds/Perc_MetronomeQuartz_lo.wav` },
+  { type: 'synth_bell_a_hi', label: 'Click 3', color: '#ff9800', file: `${import.meta.env.BASE_URL}metronome_sounds/Synth_Bell_A_hi.wav` },
+  { type: 'synth_square_d_hi', label: 'Click 4', color: '#00bcd4', file: `${import.meta.env.BASE_URL}metronome_sounds/Synth_Square_D_hi.wav` },
+  { type: 'synth_weird_a_hi', label: 'Click 5', color: '#4caf50', file: `${import.meta.env.BASE_URL}metronome_sounds/Synth_Weird_A_hi.wav` },
 ] as const;
 
 const Metronome: React.FC = () => {
@@ -31,16 +31,16 @@ const Metronome: React.FC = () => {
   useEffect(() => {
     async function fetchSounds() {
       try {
-        const res = await fetch('/metronome_sounds/index.json');
+        const res = await fetch(`${import.meta.env.BASE_URL}metronome_sounds/index.json`);
         const files = await res.json();
-        setAllSounds(files.map((f: string) => ({ file: '/metronome_sounds/' + f })));
+        setAllSounds(files.map((f: string) => ({ file: `${import.meta.env.BASE_URL}metronome_sounds/` + f })));
       } catch (e) {
         setAllSounds([
-          { file: '/metronome_sounds/Synth_Square_D_hi.wav' },
-          { file: '/metronome_sounds/Perc_Chair_lo.wav' },
-          { file: '/metronome_sounds/Perc_MetronomeQuartz_lo.wav' },
-          { file: '/metronome_sounds/Synth_Bell_A_hi.wav' },
-          { file: '/metronome_sounds/Synth_Weird_A_hi.wav' },
+          { file: `${import.meta.env.BASE_URL}metronome_sounds/Synth_Square_D_hi.wav` },
+          { file: `${import.meta.env.BASE_URL}metronome_sounds/Perc_Chair_lo.wav` },
+          { file: `${import.meta.env.BASE_URL}metronome_sounds/Perc_MetronomeQuartz_lo.wav` },
+          { file: `${import.meta.env.BASE_URL}metronome_sounds/Synth_Bell_A_hi.wav` },
+          { file: `${import.meta.env.BASE_URL}metronome_sounds/Synth_Weird_A_hi.wav` },
         ]);
       }
     }
