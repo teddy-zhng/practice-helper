@@ -3,7 +3,7 @@ import * as Tone from 'tone';
 
 const COMMON_BPMS = [44, 46, 48, 50, 52, 54, 56, 58, 60, 63, 66, 69, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112, 116, 120, 126, 132, 138, 144, 152, 160, 168, 176, 184, 200, 208];
 
-const SOUNDS = [
+const MAIN_SOUNDS = [
   { label: 'Click 1', file: `${import.meta.env.BASE_URL}metronome_sounds/Perc_Chair_lo.wav` },
   { label: 'Click 2', file: `${import.meta.env.BASE_URL}metronome_sounds/Perc_MetronomeQuartz_lo.wav` },
   { label: 'Click 3', file: `${import.meta.env.BASE_URL}metronome_sounds/Synth_Bell_A_hi.wav` },
@@ -11,14 +11,33 @@ const SOUNDS = [
   { label: 'Click 5', file: `${import.meta.env.BASE_URL}metronome_sounds/Synth_Weird_A_hi.wav` },
 ];
 
+function getDisplayName(file: string) {
+  const base = file.split('/').pop()?.replace(/\.wav$/i, '') || file;
+  const main = MAIN_SOUNDS.find(m => m.file === file);
+  return main ? `${base} (${main.label})` : base;
+}
+
 const Metronome: React.FC = () => {
   const [bpm, setBpm] = useState(88);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [soundIdx, setSoundIdx] = useState(0);
+  const [soundIdx, setSoundIdx] = useState(0); // index in allSounds
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [allSounds, setAllSounds] = useState<string[]>(MAIN_SOUNDS.map(s => s.file));
   const playerRef = useRef<Tone.Player | null>(null);
   const loopRef = useRef<Tone.Loop | null>(null);
+
+  // Load all sounds from index.json on mount
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}metronome_sounds/index.json`)
+      .then(res => res.json())
+      .then(files => setAllSounds(files.map((f: string) => `${import.meta.env.BASE_URL}metronome_sounds/` + f)))
+      .catch(() => setAllSounds(MAIN_SOUNDS.map(s => s.file)));
+    return () => {
+      stopMetronome();
+    };
+    // eslint-disable-next-line
+  }, []);
 
   // Cleanup audio on unmount or stop
   useEffect(() => {
@@ -53,7 +72,7 @@ const Metronome: React.FC = () => {
       const player = new Tone.Player({
         url: file,
         autostart: false,
-        volume: 0,
+        volume: 12, // maximum loudness for normal computers (dB)
         onload: () => {
           setIsLoading(false);
           resolve(player);
@@ -74,7 +93,7 @@ const Metronome: React.FC = () => {
     if (!ok) return;
     stopMetronome();
     try {
-      const player = await loadPlayer(SOUNDS[soundIdx].file);
+      const player = await loadPlayer(allSounds[soundIdx]);
       playerRef.current = player;
       Tone.Transport.bpm.value = bpm;
       loopRef.current = new Tone.Loop((time) => {
@@ -226,29 +245,33 @@ const Metronome: React.FC = () => {
         </div>
         {/* Sound selection */}
         <div style={{ display: 'flex', justifyContent: 'center', width: '100%', maxWidth: 380, marginTop: 6 }}>
-          {SOUNDS.map((s, idx) => (
-            <button
-              key={s.file}
-              onClick={e => { e.stopPropagation(); handleSoundChange(idx); }}
-              style={{
-                padding: '5px 6px',
-                fontSize: '11px',
-                border: 'none',
-                borderRadius: '0px',
-                backgroundColor: soundIdx === idx ? '#4caf50' : '#e8e8e8',
-                color: soundIdx === idx ? 'white' : '#333',
-                cursor: isPlaying ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                minWidth: '38px',
-                margin: '0px',
-                flex: 1,
-              }}
-              aria-label={`Select ${s.label} click sound`}
-              disabled={isPlaying}
-            >
-              {s.label}
-            </button>
-          ))}
+          {MAIN_SOUNDS.map((s, idx) => {
+            // Find the index in allSounds for this main sound
+            const allIdx = allSounds.findIndex(f => f === s.file);
+            return (
+              <button
+                key={s.file}
+                onClick={e => { e.stopPropagation(); handleSoundChange(allIdx); }}
+                style={{
+                  padding: '5px 6px',
+                  fontSize: '11px',
+                  border: 'none',
+                  borderRadius: '0px',
+                  backgroundColor: soundIdx === allIdx ? '#4caf50' : '#e8e8e8',
+                  color: soundIdx === allIdx ? 'white' : '#333',
+                  cursor: isPlaying ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  minWidth: '38px',
+                  margin: '0px',
+                  flex: 1,
+                }}
+                aria-label={`Select ${s.label} click sound`}
+                disabled={isPlaying}
+              >
+                {s.label}
+              </button>
+            );
+          })}
         </div>
         {/* Dropdown for all sounds */}
         <div style={{ marginTop: 8, width: '100%', maxWidth: 420, display: 'flex', justifyContent: 'center' }}>
@@ -262,9 +285,9 @@ const Metronome: React.FC = () => {
             aria-label="Select metronome sound"
             disabled={isPlaying}
           >
-            {SOUNDS.map((s, idx) => (
-              <option key={s.file} value={idx}>
-                {s.label}
+            {allSounds.map((file, idx) => (
+              <option key={file} value={idx}>
+                {getDisplayName(file)}
               </option>
             ))}
           </select>
