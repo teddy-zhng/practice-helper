@@ -203,16 +203,16 @@ const App: React.FC = () => {
         {/* Socials bar */}
         <div className="socials-bar">
           <a href="https://www.facebook.com/teddy.zhang.3133/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="social-icon">
-            <img src="/social_icons/square-facebook-brands.svg" alt="Facebook" width={20} height={20} className="social-icon" />
+            <img src={`${import.meta.env.BASE_URL}social_icons/square-facebook-brands.svg`} alt="Facebook" width={20} height={20} className="social-icon" />
           </a>
           <a href="https://www.instagram.com/teddysbassoon/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="social-icon">
-            <img src="/social_icons/instagram-brands-solid.svg" alt="Instagram" width={20} height={20} className="social-icon" />
+            <img src={`${import.meta.env.BASE_URL}social_icons/instagram-brands-solid.svg`} alt="Instagram" width={20} height={20} className="social-icon" />
           </a>
           <a href="https://www.youtube.com/@teddysbassoon" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="social-icon">
-            <img src="/social_icons/youtube-brands.svg" alt="YouTube" width={20} height={20} className="social-icon" />
+            <img src={`${import.meta.env.BASE_URL}social_icons/youtube-brands.svg`} alt="YouTube" width={20} height={20} className="social-icon" />
           </a>
           <a href="https://github.com/teddy-zhng/practice-helper" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="social-icon">
-            <img src="/social_icons/github-brands.svg" alt="GitHub" width={20} height={20} className="social-icon" />
+            <img src={`${import.meta.env.BASE_URL}social_icons/github-brands.svg`} alt="GitHub" width={20} height={20} className="social-icon" />
           </a>
         </div>
         {/* Bottom center info blurb */}
