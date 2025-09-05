@@ -138,8 +138,27 @@ const Metronome: React.FC = () => {
   async function handleSoundChange(idx: number) {
     setSoundIdx(idx);
     if (isPlaying) {
-      stopMetronome();
-      await startMetronome();
+      await switchSoundSeamlessly(idx);
+    }
+  }
+
+  // Seamlessly switch sound while playing
+  async function switchSoundSeamlessly(newSoundIdx: number) {
+    try {
+      // Load the new sound
+      const newPlayer = await loadPlayer(allSounds[newSoundIdx]);
+      
+      // If we successfully loaded the new sound, update the reference
+      if (playerRef.current) {
+        // Dispose the old player
+        playerRef.current.dispose();
+      }
+      
+      // Set the new player as the current one
+      playerRef.current = newPlayer;
+    } catch (error) {
+      setError('Failed to switch sound.');
+      console.error('Sound switch error:', error);
     }
   }
 
@@ -259,14 +278,13 @@ const Metronome: React.FC = () => {
                   borderRadius: '0px',
                   backgroundColor: soundIdx === allIdx ? '#4caf50' : '#e8e8e8',
                   color: soundIdx === allIdx ? 'white' : '#333',
-                  cursor: isPlaying ? 'not-allowed' : 'pointer',
+                  cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   minWidth: '38px',
                   margin: '0px',
                   flex: 1,
                 }}
                 aria-label={`Select ${s.label} click sound`}
-                disabled={isPlaying}
               >
                 {s.label}
               </button>
@@ -278,12 +296,10 @@ const Metronome: React.FC = () => {
           <select
             value={soundIdx}
             onChange={e => {
-              if (isPlaying) return;
               handleSoundChange(Number(e.target.value));
             }}
             style={{ fontSize: 13, padding: '3px 6px', width: '100%', maxWidth: 320 }}
             aria-label="Select metronome sound"
-            disabled={isPlaying}
           >
             {allSounds.map((file, idx) => (
               <option key={file} value={idx}>
