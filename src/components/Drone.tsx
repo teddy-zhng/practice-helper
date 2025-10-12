@@ -49,7 +49,7 @@ const Drone: React.FC = () => {
   const synthRefs = useRef<(Tone.Synth | Tone.MonoSynth | null)[]>([]);
 
   const getFrequency = useCallback((note: string, octave: number): number => {
-    const midi = new Tone.Frequency(`${note}${octave}`).toMidi();
+    const midi = Tone.Frequency(`${note}${octave}`).toMidi();
     return a4Frequency * Math.pow(2, (midi - 69) / 12);
   }, [a4Frequency]);
 
@@ -112,8 +112,8 @@ const Drone: React.FC = () => {
             if (index === 0) {
                 displayData.isRoot = true;
             } else {
-                const rootMidi = new Tone.Frequency(`${selectedNotes[0]}${noteOctaves[0] || octave}`).toMidi();
-                const currentMidi = new Tone.Frequency(`${note}${noteOctave}`).toMidi();
+                const rootMidi = Tone.Frequency(`${selectedNotes[0]}${noteOctaves[0] || octave}`).toMidi();
+                const currentMidi = Tone.Frequency(`${note}${noteOctave}`).toMidi();
                 let interval = (currentMidi - rootMidi) % 12;
                 if (interval < 0) interval += 12;
                 
@@ -160,10 +160,10 @@ const Drone: React.FC = () => {
 
         if (justIntonation && selectedNotes.length > 1 && selectedNotes.length < 4) {
           const rootFreq = equalTempFreqs[0];
-          const rootMidi = new Tone.Frequency(`${selectedNotes[0]}${noteOctaves[0] || octave}`).toMidi();
+          const rootMidi = Tone.Frequency(`${selectedNotes[0]}${noteOctaves[0] || octave}`).toMidi();
 
           for (let i = 1; i < selectedNotes.length; i++) {
-            const nextMidi = new Tone.Frequency(`${selectedNotes[i]}${noteOctaves[i] || octave}`).toMidi();
+            const nextMidi = Tone.Frequency(`${selectedNotes[i]}${noteOctaves[i] || octave}`).toMidi();
             let interval = (nextMidi - rootMidi) % 12;
             if (interval < 0) interval += 12;
 
