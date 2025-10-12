@@ -80,12 +80,23 @@ const Drone: React.FC = () => {
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && Tone.context.state !== 'running') {
-        await Tone.start();
         await Tone.context.resume();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+    // Add a one-time event listener to start audio on the first user gesture
+    const startAudioContext = async () => {
+      if (Tone.context.state !== 'running') {
+        await Tone.start();
+      }
+    };
+    document.documentElement.addEventListener('mousedown', startAudioContext, { once: true });
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.documentElement.removeEventListener('mousedown', startAudioContext);
+    };
   }, []);
 
   // Effect for updating the display
