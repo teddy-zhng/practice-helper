@@ -173,9 +173,11 @@ const Drone: React.FC = () => {
           }
         }
 
+        const now = Tone.now();
         freqsToPlay.forEach((freq, index) => {
           if (synthRefs.current[index]) {
-            synthRefs.current[index].triggerAttack(freq);
+            const startTime = now + (index * 0.01); // Stagger start times by 10ms
+            synthRefs.current[index].triggerAttack(freq, startTime);
           }
         });
 
