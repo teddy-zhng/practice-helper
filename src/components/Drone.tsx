@@ -13,9 +13,16 @@ const Drone: React.FC = () => {
   const [maxNotes, setMaxNotes] = useState(1);
   const [octave] = useState(3);
   const [soundType, setSoundType] = useState<SoundType>('tuning');
+  const [a4Frequency, setA4Frequency] = useState(440);
   const [error, setError] = useState<string | null>(null);
   const synthRefs = useRef<(Tone.Synth | Tone.MonoSynth | null)[]>([]);
   const retryTimeoutRef = useRef<number | null>(null);
+
+  const getFrequency = useCallback((note: string, octave: number): number => {
+    const midi = new Tone.Frequency(`${note}${octave}`).toMidi();
+    const freq = a4Frequency * Math.pow(2, (midi - 69) / 12);
+    return freq;
+  }, [a4Frequency]);
 
   const createSynth = useCallback((type: SoundType) => {
     // Dispose all existing synths
@@ -117,6 +124,18 @@ const Drone: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (isPlaying) {
+      selectedNotes.forEach((note, index) => {
+        if (synthRefs.current[index]) {
+          const noteOctave = noteOctaves[index] || octave;
+          const freq = getFrequency(note, noteOctave);
+          synthRefs.current[index]?.frequency.rampTo(freq, 0.1);
+        }
+      });
+    }
+  }, [a4Frequency, isPlaying, selectedNotes, noteOctaves, octave, getFrequency]);
+
   const handleStart = useCallback(async () => {
     try {
       setError(null);
@@ -132,7 +151,7 @@ const Drone: React.FC = () => {
       selectedNotes.forEach((note, index) => {
         if (synthRefs.current[index]) {
           const noteOctave = noteOctaves[index] || octave;
-          synthRefs.current[index]?.triggerAttack(`${note}${noteOctave}`);
+          synthRefs.current[index]?.triggerAttack(getFrequency(note, noteOctave));
         }
       });
       
@@ -149,7 +168,7 @@ const Drone: React.FC = () => {
         }, 2000);
       }
     }
-  }, [selectedNotes, noteOctaves, maxNotes, octave, soundType, createSynth]);
+  }, [selectedNotes, noteOctaves, octave, soundType, createSynth, getFrequency]);
 
   const handleStop = useCallback(() => {
     stop();
@@ -185,14 +204,14 @@ const Drone: React.FC = () => {
         newNotes.forEach((note, index) => {
           if (synthRefs.current[index]) {
             const noteOctave = noteOctaves[index] || octave;
-            synthRefs.current[index]?.triggerAttack(`${note}${noteOctave}`);
+            synthRefs.current[index]?.triggerAttack(getFrequency(note, noteOctave));
           }
         });
       }
       
       return newNotes;
     });
-  }, [isPlaying, maxNotes, octave, noteOctaves]);
+  }, [isPlaying, maxNotes, octave, noteOctaves, getFrequency]);
 
   const handleMaxNotesChange = useCallback((newMaxNotes: number) => {
     setMaxNotes(newMaxNotes);
@@ -219,12 +238,12 @@ const Drone: React.FC = () => {
         trimmedNotes.forEach((note, index) => {
           if (synthRefs.current[index]) {
             const noteOctave = noteOctaves[index] || octave;
-            synthRefs.current[index]?.triggerAttack(`${note}${noteOctave}`);
+            synthRefs.current[index]?.triggerAttack(getFrequency(note, noteOctave));
           }
         });
       }
     }
-  }, [selectedNotes, octave, isPlaying, noteOctaves]);
+  }, [selectedNotes, octave, isPlaying, noteOctaves, getFrequency]);
 
   const handleOctaveChange = useCallback((slotIndex: number, newOctave: number) => {
     setNoteOctaves(prevOctaves => {
@@ -237,10 +256,10 @@ const Drone: React.FC = () => {
       // Stop and restart the specific note with new octave
       if (synthRefs.current[slotIndex]) {
         synthRefs.current[slotIndex]?.triggerRelease();
-        synthRefs.current[slotIndex]?.triggerAttack(`${selectedNotes[slotIndex]}${newOctave}`);
+        synthRefs.current[slotIndex]?.triggerAttack(getFrequency(selectedNotes[slotIndex], newOctave));
       }
     }
-  }, [isPlaying, selectedNotes]);
+  }, [isPlaying, selectedNotes, getFrequency]);
 
   const handleSoundTypeChange = useCallback((newSoundType: SoundType) => {
     setSoundType(newSoundType);
@@ -251,11 +270,11 @@ const Drone: React.FC = () => {
       selectedNotes.forEach((note, index) => {
         if (synthRefs.current[index]) {
           const noteOctave = noteOctaves[index] || octave;
-          synthRefs.current[index]?.triggerAttack(`${note}${noteOctave}`);
+          synthRefs.current[index]?.triggerAttack(getFrequency(note, noteOctave));
         }
       });
     }
-  }, [isPlaying, selectedNotes, noteOctaves, maxNotes, octave, createSynth]);
+  }, [isPlaying, selectedNotes, noteOctaves, octave, createSynth, getFrequency]);
 
   const handleToggle = useCallback(async () => {
     await Tone.start();
@@ -358,6 +377,33 @@ const Drone: React.FC = () => {
               {num} note{num > 1 ? 's' : ''}
             </button>
           ))}
+        </div>
+
+        {/* A4 frequency input */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', maxWidth: '280px' }}>
+          <label htmlFor="a4-freq" style={{ fontSize: '14px' }}>A4 =</label>
+          <input
+            id="a4-freq"
+            type="number"
+            value={a4Frequency}
+            onChange={(e) => {
+              e.stopPropagation();
+              const newFreq = parseFloat(e.target.value);
+              if (!isNaN(newFreq)) {
+                setA4Frequency(newFreq);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '80px',
+              padding: '4px',
+              fontSize: '14px',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              textAlign: 'center'
+            }}
+          />
+          <span style={{ fontSize: '14px' }}>Hz</span>
         </div>
 
         {/* Note buttons */}
@@ -543,4 +589,5 @@ const Drone: React.FC = () => {
   );
 };
 
-export default Drone; 
+export default Drone;
+ 
