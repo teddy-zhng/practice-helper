@@ -19,9 +19,9 @@ const JUST_INTONATION_RATIOS = [
   15 / 8,     // Major Seventh
 ];
 
-const INTERVAL_NAMES = [
-  'Unison', 'Minor Second', 'Major Second', 'Minor Third', 'Major Third', 'Perfect Fourth',
-  'Tritone', 'Perfect Fifth', 'Minor Sixth', 'Major Sixth', 'Minor Seventh', 'Major Seventh'
+const INTERVAL_ABBREVIATIONS = [
+  'Root', 'm2', 'M2', 'm3', 'M3', 'P4',
+  'TT', 'P5', 'm6', 'M6', 'm7', 'M7'
 ];
 
 type SoundType = 'pure' | 'retro';
@@ -43,7 +43,7 @@ const Drone: React.FC = () => {
   const [octave] = useState(4);
   const [soundType, setSoundType] = useState<SoundType>('pure');
   const [a4Frequency, setA4Frequency] = useState(440);
-  const [justIntonation, setJustIntonation] = useState(false);
+  const [justIntonation, setJustIntonation] = useState(true);
   const [displayInfo, setDisplayInfo] = useState<DisplayInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const synthRefs = useRef<(Tone.Synth | Tone.MonoSynth | null)[]>([]);
@@ -88,10 +88,58 @@ const Drone: React.FC = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
+  // Effect for updating the display
+  useEffect(() => {
+    if (selectedNotes.length === 0) {
+      setDisplayInfo([]);
+      return;
+    }
+
+    const equalTempFreqs = selectedNotes.map((note, index) => getFrequency(note, noteOctaves[index] || octave));
+    const newDisplayInfo: DisplayInfo[] = [];
+
+    selectedNotes.forEach((note, index) => {
+        const noteOctave = noteOctaves[index] || octave;
+        const currentFreq = equalTempFreqs[index];
+
+        const displayData: DisplayInfo = {
+            note: note,
+            octave: noteOctave,
+            freq: currentFreq,
+        };
+
+        if (selectedNotes.length > 1) {
+            if (index === 0) {
+                displayData.isRoot = true;
+            } else {
+                const rootMidi = new Tone.Frequency(`${selectedNotes[0]}${noteOctaves[0] || octave}`).toMidi();
+                const currentMidi = new Tone.Frequency(`${note}${noteOctave}`).toMidi();
+                let interval = (currentMidi - rootMidi) % 12;
+                if (interval < 0) interval += 12;
+                
+                displayData.intervalName = INTERVAL_ABBREVIATIONS[interval];
+
+                if (justIntonation) {
+                    const rootFreq = equalTempFreqs[0];
+                    const ratio = JUST_INTONATION_RATIOS[interval];
+                    const octaveDiff = Math.floor((currentMidi - rootMidi) / 12);
+                    const justFreq = rootFreq * ratio * Math.pow(2, octaveDiff);
+                    
+                    displayData.freq = justFreq;
+                    displayData.cents = 1200 * Math.log2(justFreq / currentFreq);
+                }
+            }
+        }
+        newDisplayInfo.push(displayData);
+    });
+    
+    setDisplayInfo(newDisplayInfo);
+  }, [selectedNotes, noteOctaves, a4Frequency, justIntonation, getFrequency, octave]);
+
+  // Effect for handling audio playback
   useEffect(() => {
     if (!isPlaying) {
       stop();
-      setDisplayInfo([]);
       return;
     }
 
@@ -109,52 +157,21 @@ const Drone: React.FC = () => {
 
         const equalTempFreqs = selectedNotes.map((note, index) => getFrequency(note, noteOctaves[index] || octave));
         let freqsToPlay = [...equalTempFreqs];
-        const newDisplayInfo: DisplayInfo[] = [];
 
         if (justIntonation && selectedNotes.length > 1 && selectedNotes.length < 4) {
-          const rootNote = selectedNotes[0];
-          const rootOctave = noteOctaves[0] || octave;
           const rootFreq = equalTempFreqs[0];
-          
-          newDisplayInfo.push({ note: rootNote, octave: rootOctave, freq: rootFreq, isRoot: true });
+          const rootMidi = new Tone.Frequency(`${selectedNotes[0]}${noteOctaves[0] || octave}`).toMidi();
 
           for (let i = 1; i < selectedNotes.length; i++) {
-            const note = selectedNotes[i];
-            const noteOctave = noteOctaves[i] || octave;
-            const equalTempFreq = equalTempFreqs[i];
-
-            const rootMidi = new Tone.Frequency(`${rootNote}${rootOctave}`).toMidi();
-            const nextMidi = new Tone.Frequency(`${note}${noteOctave}`).toMidi();
+            const nextMidi = new Tone.Frequency(`${selectedNotes[i]}${noteOctaves[i] || octave}`).toMidi();
             let interval = (nextMidi - rootMidi) % 12;
             if (interval < 0) interval += 12;
 
             const ratio = JUST_INTONATION_RATIOS[interval];
             const octaveDiff = Math.floor((nextMidi - rootMidi) / 12);
-            const justFreq = rootFreq * ratio * Math.pow(2, octaveDiff);
-            
-            freqsToPlay[i] = justFreq;
-
-            const cents = 1200 * Math.log2(justFreq / equalTempFreq);
-
-            newDisplayInfo.push({
-                note: note,
-                octave: noteOctave,
-                freq: justFreq,
-                intervalName: INTERVAL_NAMES[interval],
-                cents: cents,
-            });
+            freqsToPlay[i] = rootFreq * ratio * Math.pow(2, octaveDiff);
           }
-        } else {
-          selectedNotes.forEach((note, index) => {
-            newDisplayInfo.push({
-                note: note,
-                octave: noteOctaves[index] || octave,
-                freq: equalTempFreqs[index],
-            });
-          });
         }
-        
-        setDisplayInfo(newDisplayInfo);
 
         freqsToPlay.forEach((freq, index) => {
           if (synthRefs.current[index]) {
@@ -399,9 +416,9 @@ const Drone: React.FC = () => {
                         <span>{`${info.note}${info.octave}`}</span>
                         <span style={{ fontSize: '12px', color: '#555', marginLeft: '8px' }}>
                             {`(${info.freq.toFixed(2)} Hz`}
-                            {info.isRoot && ' (root)'}
-                            {info.intervalName && info.cents !== undefined && 
-                                `, ${info.intervalName}, ${info.cents > 0 ? '+' : ''}${info.cents.toFixed(1)} cents`}
+                            {info.isRoot && ' root'}
+                            {info.intervalName && `, ${info.intervalName}`}
+                            {info.cents !== undefined && `, ${info.cents > 0 ? '+' : ''}${info.cents.toFixed(1)} cents`}
                             {`)`}
                         </span>
                     </div>
@@ -415,8 +432,8 @@ const Drone: React.FC = () => {
           width: '100%',
           maxWidth: '280px'
         }}>
-          {[
-            { type: 'pure' as SoundType, label: 'tone 1', color: '#9c27b0' },
+          {[{
+            type: 'pure' as SoundType, label: 'tone 1', color: '#9c27b0' },
             { type: 'retro' as SoundType, label: 'tone 2', color: '#ff9800' }
           ].map(({ type, label, color }) => (
             <button
