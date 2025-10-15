@@ -16,6 +16,7 @@ function isSafari() {
 const hintMessages = [
   'click anywhere on a tool to turn it on/off.',
   'all of the tools can be used simultaneously.',
+  'an external speaker is recommended to best use the drone.',
   'try using multi-note drones!',
   'permanently allow microphone for this site in your browser settings',
   'tuner markings include just temperament!',
@@ -169,7 +170,7 @@ const App: React.FC = () => {
               borderRadius: 12,
               boxShadow: '0 2px 16px rgba(0,0,0,0.18)',
               padding: '32px 36px',
-              minWidth: 320,
+              minWidth: 600,
               textAlign: 'center',
               fontSize: 22,
               color: '#333',
@@ -178,9 +179,24 @@ const App: React.FC = () => {
               maxWidth: '90vw',
             }}
           >
-            <div style={{ fontWeight: 600, marginBottom: 12 }}>Tuner / Drone / Metronome</div>
-            <div style={{ fontSize: 15, color: '#666' }}>
-              click anywhere to start
+            <div style={{ fontSize: 40, fontWeight: 600, marginBottom: 4}}>Practice Helper</div>
+            <div style={{ fontSize: 20, marginBottom: 4}}>
+              3-in-1 tuner/drone/metronome 
+            </div>
+            <div style={{ fontSize: 14, marginBottom: 60}}>
+              by Teddy Zhang
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 2 }}>
+              instructions:
+            </div>
+            <div style={{ fontSize: 14, marginBottom: 2 }}>
+              select a tool to turn it on/off.
+            </div>
+            <div style={{ fontSize: 14, marginBottom: 80}}>
+              external speaker recommended.
+            </div>
+            <div style={{ fontSize: 12, color: '#666', fontStyle: 'italic' }}>
+              click anywhere to begin practicing
             </div>
             {audioError && <div style={{ color: 'red', fontSize: 15, marginTop: 16 }}>{audioError}</div>}
           </div>
@@ -194,7 +210,7 @@ const App: React.FC = () => {
           type="button"
         >
           <span className="hint-text">{hintMessages[hintIndex]}</span>
-          <svg className="info-icon" width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+          <svg className="info-icon" width="20" height="20" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
             <circle cx="7" cy="7" r="6.5" stroke="currentColor" strokeWidth="1" fill="none"/>
             <text x="7" y="9.5" textAnchor="middle" fontSize="8" fill="currentColor" fontWeight="bold">i</text>
           </svg>
@@ -216,7 +232,7 @@ const App: React.FC = () => {
         </div>
         {/* Bottom center info blurb */}
         <div className="bottom-blurb">
-          practice helper by Teddy Zhang |
+          Practice Helper by Teddy Zhang |
           {' '}
           <a
             href="https://coff.ee/teddyzhng"
