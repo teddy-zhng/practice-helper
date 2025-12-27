@@ -502,7 +502,7 @@ const Drone: React.FC = () => {
                                     }}
                                     title="Add octave up"
                                 >
-                                    8va
+                                    +8va
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleOctaveAdd(currentNote, currentOctave, 'down'); }}
@@ -513,7 +513,7 @@ const Drone: React.FC = () => {
                                     }}
                                     title="Add octave down"
                                 >
-                                    8vb
+                                    +8vb
                                 </button>
                             </>
                         ) : (
