@@ -168,24 +168,36 @@ const App: React.FC = () => {
               maxWidth: '90vw',
             }}
           >
-            <div style={{ fontSize: 40, fontWeight: 600, marginBottom: 4}}>Practice Helper</div>
+            <div style={{ fontSize: 40, fontWeight: 600, marginBottom: 4}}>needtopractice</div>
             <div style={{ fontSize: 20, marginBottom: 4}}>
-              3-in-1 tuner/drone/metronome 
+              a 3-in-1 practicing tool (tuner, drone, and metronome)
             </div>
             <div style={{ fontSize: 14, marginBottom: 60}}>
               by Teddy Zhang
             </div>
-            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 2 }}>
+            <div style={{ fontSize: 30, fontWeight: 600, marginBottom: 2 }}>
               instructions:
             </div>
-            <div style={{ fontSize: 14, marginBottom: 2 }}>
-              select a tool to turn it on/off.
+            <div style={{ fontSize: 20, marginBottom: 10}}>
+              select a tool to turn it on/off:
             </div>
-            <div style={{ fontSize: 14, marginBottom: 80}}>
-              external speaker recommended.
+            <div style={{ marginBottom: 30, display: 'flex', justifyContent: 'center' }}>
+              <img 
+                src={`${import.meta.env.BASE_URL}demo.jpg`} 
+                alt="Demo" 
+                style={{ 
+                  maxWidth: '15%', 
+                  height: 'auto', 
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }} 
+              />
+            </div>
+            <div style={{ fontSize: 20, marginBottom: 80}}>
+              (recommended) connect an external speaker.
             </div>
             <div style={{ fontSize: 12, color: '#666', fontStyle: 'italic' }}>
-              click anywhere to begin practicing
+              click anywhere to continue
             </div>
             {audioError && <div style={{ color: 'red', fontSize: 15, marginTop: 16 }}>{audioError}</div>}
           </div>
@@ -221,16 +233,14 @@ const App: React.FC = () => {
         </div>
         {/* Bottom center info blurb */}
         <div className="bottom-blurb">
-          Practice Helper by Teddy Zhang |
-          {' '}
-          <a
+          needtopractice is completely free to use. <a
             href="https://coff.ee/teddyzhng"
             target="_blank"
             rel="noopener noreferrer"
             className="bottom-blurb-link"
             aria-label="Support this site on coff.ee"
           >
-            support this site
+            support this site here
           </a>
         </div>
         <div className="column">
