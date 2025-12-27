@@ -4,15 +4,6 @@ import Drone from './components/Drone';
 import Metronome from './components/Metronome';
 import './App.css';
 
-// Utility to detect Safari
-function isSafari() {
-  const ua = window.navigator.userAgent;
-  return (
-    /Safari/.test(ua) &&
-    !/Chrome|Chromium|Edg|OPR|Brave|Android/i.test(ua)
-  );
-}
-
 const hintMessages = [
   'click anywhere on a tool to turn it on/off.',
   'all of the tools can be used simultaneously.',
@@ -40,7 +31,6 @@ const App: React.FC = () => {
   // Audio unlock state
   const [audioReady, setAudioReady] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const [showSafariPopup, setShowSafariPopup] = useState(isSafari());
 
   // Ref to ensure hint is only auto-shown once
   const hasAutoShownHint = useRef(false);
@@ -80,8 +70,8 @@ const App: React.FC = () => {
     };
   }, [clearHintTimeout]);
 
-  // Only show popup for Safari and if not ready
-  const shouldShowPopup = showSafariPopup && !audioReady;
+  // Only show popup if not ready
+  const shouldShowPopup = !audioReady;
 
   const [tooSmall, setTooSmall] = useState(false);
 
@@ -112,7 +102,6 @@ const App: React.FC = () => {
       }
       setAudioReady(true);
       setAudioError(null);
-      setShowSafariPopup(false);
     } catch {
       setAudioError('Please refresh and try again.');
     }
