@@ -221,16 +221,76 @@ const Drone: React.FC = () => {
   }, []);
 
   const handleNoteChange = useCallback((newNote: string) => {
-    setSelectedNotes(prevNotes => {
-      if (prevNotes.includes(newNote)) {
-        return prevNotes.filter(n => n !== newNote);
-      } else if (prevNotes.length < maxNotes) {
-        return [...prevNotes, newNote];
-      } else {
-        return [...prevNotes.slice(1), newNote];
-      }
-    });
-  }, [maxNotes]);
+    if (selectedNotes.includes(newNote)) {
+        // Remove ALL instances of this note (strict sync)
+        const indicesToRemove = selectedNotes.map((n, i) => n === newNote ? i : -1).filter(i => i !== -1);
+        const newNotes = selectedNotes.filter((_, i) => !indicesToRemove.includes(i));
+        const newOctaves = noteOctaves.filter((_, i) => !indicesToRemove.includes(i));
+        
+        setSelectedNotes(newNotes);
+        setNoteOctaves(newOctaves);
+    } else if (selectedNotes.length < maxNotes) {
+        // Add new note
+        const nextIndex = selectedNotes.length;
+        setSelectedNotes([...selectedNotes, newNote]);
+        const newOctaves = [...noteOctaves];
+        if (newOctaves[nextIndex] === undefined) {
+            newOctaves[nextIndex] = octave;
+        }
+        setNoteOctaves(newOctaves);
+    } else {
+        // Replace oldest
+        const newNotes = [...selectedNotes.slice(1), newNote];
+        const newOctaves = [...noteOctaves.slice(1), octave];
+        setSelectedNotes(newNotes);
+        setNoteOctaves(newOctaves);
+    }
+  }, [selectedNotes, noteOctaves, maxNotes, octave]);
+
+  const handleOctaveAdd = useCallback((note: string, currentOctave: number, direction: 'up' | 'down') => {
+    if (!note) return;
+    
+    // Calculate target octave based on direction
+    let targetOctave = direction === 'up' ? currentOctave + 1 : currentOctave - 1;
+    
+    // Boundary checks: 
+    // If going up from 6 (to 7), go down instead (to 5).
+    // If going down from 2 (to 1), go up instead (to 3).
+    if (targetOctave > 6) targetOctave = currentOctave - 1;
+    if (targetOctave < 2) targetOctave = currentOctave + 1;
+    
+    // Check for existing instance of this note+octave
+    const idx = selectedNotes.findIndex((n, i) => n === note && noteOctaves[i] === targetOctave);
+    
+    if (idx !== -1) {
+        // Already exists: Do nothing (prevent unison). 
+        // User must use the 'X' button on the duplicate note to remove it.
+        return;
+    } else if (selectedNotes.length < maxNotes) {
+        // Add new note normally
+        const nextIndex = selectedNotes.length;
+        setSelectedNotes([...selectedNotes, note]);
+        const newOctaves = [...noteOctaves];
+        newOctaves[nextIndex] = targetOctave;
+        setNoteOctaves(newOctaves);
+    } else {
+        // Queue full -> Shift
+        // If the note we are interacting with is the Root (index 0), we preserve it.
+        // Otherwise, we follow standard FIFO (remove index 0).
+        const originalIndex = selectedNotes.findIndex((n, i) => n === note && noteOctaves[i] === currentOctave);
+        
+        let removeIndex = 0; 
+        if (originalIndex === 0) {
+            removeIndex = 1; 
+        }
+        
+        const newNotes = selectedNotes.filter((_, i) => i !== removeIndex);
+        const newOctaves = noteOctaves.filter((_, i) => i !== removeIndex);
+        
+        setSelectedNotes([...newNotes, note]);
+        setNoteOctaves([...newOctaves, targetOctave]);
+    }
+  }, [selectedNotes, noteOctaves, maxNotes]);
 
   const handleMaxNotesChange = useCallback((newMaxNotes: number) => {
     setMaxNotes(newMaxNotes);
@@ -246,11 +306,18 @@ const Drone: React.FC = () => {
 
   const handleOctaveChange = useCallback((slotIndex: number, newOctave: number) => {
     setNoteOctaves(prev => {
-      const newOctaves = [...prev];
-      newOctaves[slotIndex] = newOctave;
-      return newOctaves;
+        const newOctaves = [...prev];
+        newOctaves[slotIndex] = newOctave;
+        return newOctaves;
     });
   }, []);
+
+  const handleNoteRemove = useCallback((index: number) => {
+    const newNotes = selectedNotes.filter((_, i) => i !== index);
+    const newOctaves = noteOctaves.filter((_, i) => i !== index);
+    setSelectedNotes(newNotes);
+    setNoteOctaves(newOctaves);
+  }, [selectedNotes, noteOctaves]);
 
   const handleSoundTypeChange = useCallback((newSoundType: SoundType) => {
     setSoundType(newSoundType);
@@ -358,17 +425,20 @@ const Drone: React.FC = () => {
         </div>
 
         {maxNotes === 1 ? (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '280px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '280px' }}>
+            <span style={{ fontSize: '12px', minWidth: '48px', textAlign: 'center' }}>
+              {selectedNotes[0] ? selectedNotes[0] : `--`}:
+            </span>
+            <div style={{ display: 'flex', flex: 1 }}>
               {OCTAVES.map((o) => (
                 <button
                   key={o}
                   onClick={(e) => { e.stopPropagation(); handleOctaveChange(0, o); }}
                   style={{
-                    padding: '8px 12px', fontSize: '14px', border: 'none', borderRadius: '0px',
+                    padding: '6px 4px', fontSize: '12px', border: 'none', borderRadius: '0px',
                     backgroundColor: noteOctaves[0] === o ? '#2196f3' : '#e8e8e8',
                     color: noteOctaves[0] === o ? 'white' : '#333',
-                    cursor: 'pointer', transition: 'all 0.2s ease', minWidth: '40px', margin: '0px', flex: 1
+                    cursor: 'pointer', transition: 'all 0.2s ease', flex: 1, margin: '0px'
                   }}
                   aria-label={`Select octave ${o}`}
                 >
@@ -376,34 +446,93 @@ const Drone: React.FC = () => {
                 </button>
               ))}
             </div>
-          </>
+            <div style={{ width: '32px', marginLeft: '4px' }} />
+          </div>
         ) : (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '280px' }}>
-              {Array.from({ length: maxNotes }).map((_, slotIndex) => (
+              {Array.from({ length: maxNotes }).map((_, slotIndex) => {
+                const currentNote = selectedNotes[slotIndex];
+                const currentOctave = noteOctaves[slotIndex];
+                return (
                 <div key={slotIndex} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '12px', minWidth: '48px', textAlign: 'center' }}>
-                    {selectedNotes[slotIndex] ? selectedNotes[slotIndex] : `--`}:
+                    {currentNote ? currentNote : `--`}:
                   </span>
                   <div style={{ display: 'flex', flex: 1 }}>
-                    {OCTAVES.map((o) => (
+                    {OCTAVES.map((o) => {
+                      // Disabled if this octave is selected for this note in ANY OTHER slot
+                      let disabled = false;
+                      if (currentNote) {
+                          disabled = selectedNotes.some((otherNote, otherIndex) => 
+                              otherIndex !== slotIndex && 
+                              otherNote === currentNote && 
+                              noteOctaves[otherIndex] === o
+                          );
+                      }
+                      
+                      return (
                       <button
                         key={o}
-                        onClick={(e) => { e.stopPropagation(); handleOctaveChange(slotIndex, o); }}
+                        onClick={(e) => { e.stopPropagation(); if(!disabled) handleOctaveChange(slotIndex, o); }}
+                        disabled={disabled}
                         style={{
-                          padding: '6px 8px', fontSize: '12px', border: 'none', borderRadius: '0px',
-                          backgroundColor: noteOctaves[slotIndex] === o ? '#2196f3' : '#e8e8e8',
-                          color: noteOctaves[slotIndex] === o ? 'white' : '#333',
-                          cursor: 'pointer', transition: 'all 0.2s ease', flex: 1, margin: '0px'
+                          padding: '6px 4px', fontSize: '12px', border: 'none', borderRadius: '0px',
+                          backgroundColor: noteOctaves[slotIndex] === o ? '#2196f3' : (disabled ? '#ddd' : '#e8e8e8'),
+                          color: noteOctaves[slotIndex] === o ? 'white' : (disabled ? '#aaa' : '#333'),
+                          cursor: disabled ? 'default' : 'pointer', transition: 'all 0.2s ease', flex: 1, margin: '0px'
                         }}
                         aria-label={`Select octave ${o} for slot ${slotIndex + 1}`}
                       >
                         {o}
                       </button>
-                    ))}
+                    )})}
+                  </div>
+                  {/* 8va / 8vb buttons OR X button for duplicates */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', marginLeft: '4px', width: '32px', height: '100%', justifyContent: 'center' }}>
+                    {currentNote && (
+                        selectedNotes.indexOf(currentNote) === slotIndex ? (
+                            <>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleOctaveAdd(currentNote, currentOctave, 'up'); }}
+                                    style={{
+                                        padding: '2px 0', fontSize: '10px', border: 'none', borderRadius: '2px',
+                                        backgroundColor: '#607d8b', color: 'white',
+                                        cursor: 'pointer', lineHeight: 1, width: '100%'
+                                    }}
+                                    title="Add octave up"
+                                >
+                                    8va
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleOctaveAdd(currentNote, currentOctave, 'down'); }}
+                                    style={{
+                                        padding: '2px 0', fontSize: '10px', border: 'none', borderRadius: '2px',
+                                        backgroundColor: '#607d8b', color: 'white',
+                                        cursor: 'pointer', lineHeight: 1, width: '100%'
+                                    }}
+                                    title="Add octave down"
+                                >
+                                    8vb
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleNoteRemove(slotIndex); }}
+                                style={{
+                                    padding: '0', fontSize: '12px', border: 'none', borderRadius: '2px',
+                                    backgroundColor: '#f44336', color: 'white',
+                                    cursor: 'pointer', lineHeight: 1, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%'
+                                }}
+                                title="Remove duplicate note"
+                            >
+                                ✕
+                            </button>
+                        )
+                    )}
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
             {(maxNotes === 2 || maxNotes === 3) && (
               <div 
