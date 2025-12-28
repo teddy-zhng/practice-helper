@@ -169,19 +169,19 @@ const App: React.FC = () => {
             }}
           >
             <div style={{ fontSize: 40, fontWeight: 600, marginBottom: 4}}>needtopractice</div>
-            <div style={{ fontSize: 20, marginBottom: 4}}>
-              a 3-in-1 practicing tool (tuner, drone, and metronome)
+            <div style={{ fontSize: 30, marginBottom: 4}}>
+              a 3-in-1 practicing tool
             </div>
             <div style={{ fontSize: 14, marginBottom: 60}}>
-              by Teddy Zhang
+              (tuner, drone, and metronome)
             </div>
             <div style={{ fontSize: 30, fontWeight: 600, marginBottom: 2 }}>
-              instructions:
+              instructions
             </div>
             <div style={{ fontSize: 20, marginBottom: 10}}>
               select a tool to turn it on/off:
             </div>
-            <div style={{ marginBottom: 30, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ marginBottom: 50, display: 'flex', justifyContent: 'center' }}>
               <img 
                 src={`${import.meta.env.BASE_URL}demo.jpg`} 
                 alt="Demo" 
@@ -193,8 +193,10 @@ const App: React.FC = () => {
                 }} 
               />
             </div>
-            <div style={{ fontSize: 20, marginBottom: 80}}>
-              (recommended) connect an external speaker.
+            <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 2}}>
+              recommended: 
+            </div><div style={{ fontSize: 20, marginBottom: 60}}>
+              connect an external speaker
             </div>
             <div style={{ fontSize: 12, color: '#666', fontStyle: 'italic' }}>
               click anywhere to continue
