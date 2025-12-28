@@ -227,9 +227,6 @@ const App: React.FC = () => {
         </button>
         {/* Socials bar */}
         <div className="socials-bar">
-          <a href="https://www.facebook.com/teddy.zhang.3133/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="social-icon">
-            <img src={`${import.meta.env.BASE_URL}social_icons/square-facebook-brands.svg`} alt="Facebook" width={20} height={20} className="social-icon" />
-          </a>
           <a href="https://www.instagram.com/teddysbassoon/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="social-icon">
             <img src={`${import.meta.env.BASE_URL}social_icons/instagram-brands-solid.svg`} alt="Instagram" width={20} height={20} className="social-icon" />
           </a>
