@@ -73,7 +73,7 @@ const App: React.FC = () => {
   // Only show popup if not ready
   const shouldShowPopup = !audioReady;
 
-  const [tooSmall, setTooSmall] = useState(false);
+  // const [tooSmall, setTooSmall] = useState(false);
 
   // Show hint automatically on first load (after popup if applicable)
   useEffect(() => {
@@ -107,14 +107,14 @@ const App: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    function handleResize() {
-      setTooSmall(window.innerWidth < 956 || window.innerHeight < 600);
-    }
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // useEffect(() => {
+  //   function handleResize() {
+  //     setTooSmall(window.innerWidth < 956 || window.innerHeight < 600);
+  //   }
+  //   handleResize();
+  //   window.addEventListener('resize', handleResize);
+  //   return () => window.removeEventListener('resize', handleResize);
+  // }, []);
 
   // if (tooSmall) {
   //   return (
@@ -199,8 +199,11 @@ const App: React.FC = () => {
             <div style={{ fontSize: 20, marginBottom: 2}}>
               use a tablet or computer
             </div>
-            <div style={{ fontSize: 20, marginBottom: 60}}>
+            <div style={{ fontSize: 20, marginBottom: 2}}>
               with an external speaker
+            </div>
+            <div style={{ fontSize: 20, marginBottom: 60}}>
+              (issues may occur on safari browser)
             </div>
             <div style={{ fontSize: 12, color: '#666', fontStyle: 'italic' }}>
               click anywhere to continue
