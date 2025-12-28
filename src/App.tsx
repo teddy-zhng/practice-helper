@@ -116,24 +116,24 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  if (tooSmall) {
-    return (
-      <div style={{
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontSize: '2rem',
-        color: '#888',
-        background: '#fff',
-        textAlign: 'center',
-      }}>
-        screen too small<br />
-        the point of this website is to not use your phone!
-      </div>
-    );
-  }
+  // if (tooSmall) {
+  //   return (
+  //     <div style={{
+  //       width: '100vw',
+  //       height: '100vh',
+  //       display: 'flex',
+  //       justifyContent: 'center',
+  //       alignItems: 'center',
+  //       fontSize: '2rem',
+  //       color: '#888',
+  //       background: '#fff',
+  //       textAlign: 'center',
+  //     }}>
+  //       screen too small<br />
+  //       the point of this website is to not use your phone!
+  //     </div>
+  //   );
+  // }
 
   return (
     <>
@@ -194,9 +194,13 @@ const App: React.FC = () => {
               />
             </div>
             <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 2}}>
-              recommended: 
-            </div><div style={{ fontSize: 20, marginBottom: 60}}>
-              connect an external speaker
+              for best experience: 
+            </div>
+            <div style={{ fontSize: 20, marginBottom: 2}}>
+              use a tablet or computer
+            </div>
+            <div style={{ fontSize: 20, marginBottom: 60}}>
+              with an external speaker
             </div>
             <div style={{ fontSize: 12, color: '#666', fontStyle: 'italic' }}>
               click anywhere to continue
