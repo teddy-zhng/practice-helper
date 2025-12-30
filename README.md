@@ -4,7 +4,7 @@ A conveninent tool for myself to have a tuner, drone, and metronome in the same 
 
 Mostly vibe-coded.
 
-link: needtopractice.com
+[needtopractice.com](url)
 
 ## Features
 
